@@ -154,7 +154,7 @@ function triggerDialog(text = '') {
   }
   else if (popupSectionToShow.value === 'links')  {
     quill.deleteText(--caretPosition.index, 1);
-    quill.insertText(caretPosition, text, 'link', 'https://world.com');
+    quill.insertText(caretPosition, text, 'link', 'https://world1.com');
   }
 
   const caretPositionInPixels = quill.getBounds(caretPosition);
