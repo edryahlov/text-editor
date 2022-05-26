@@ -75,29 +75,19 @@ const titles = {
   'links': 'Выбрать - "TAB", создать - "ENTER"',
 }
 
-const popupSections = {options, tags, links};
+let popupSections = {options, tags, links};
 const popupSectionToShow = ref('options');
 const popupActiveOption = ref({'options': 0, 'tags': 0, 'links': 0});
 
 const popupVisible = ref(false);
 const popupX = ref(0);
 const popupY = ref(0);
-const input = ref('');
+let input = ref('');
 
 let quill;
 
-// document.onkeydown = function(e) {
-//   console.log(e)
-//   if (e.code === 'Tab') {
-//     return false;
-//   }
-// }
-
-document.addEventListener('keyup', (e) => {
-  e.stopPropagation();
-  e.preventDefault();
-
-  if (e.code === "ArrowUp") {
+document.addEventListener('keydown', (e) => {
+  if (e.code === "ArrowUp" && popupVisible.value) {
     e.preventDefault();
     if (popupActiveOption.value[popupSectionToShow.value] === 0) {
       popupActiveOption.value[popupSectionToShow.value] = popupSections[popupSectionToShow.value].length-1;
@@ -105,7 +95,7 @@ document.addEventListener('keyup', (e) => {
       popupActiveOption.value[popupSectionToShow.value] -= 1;
     }
   }
-  else if (e.code === "ArrowDown") {
+  else if (e.code === "ArrowDown" && popupVisible.value) {
     e.preventDefault();
     if (popupActiveOption.value[popupSectionToShow.value] >= popupSections[popupSectionToShow.value].length-1) {
       popupActiveOption.value[popupSectionToShow.value] = 0;
@@ -117,8 +107,15 @@ document.addEventListener('keyup', (e) => {
     e.preventDefault();
     popupVisible.value = false;
   }
+  else if (e.code === "Enter" && popupVisible.value) {
+    e.preventDefault();
+    console.log('enter2', e.code === "Enter", popupVisible.value)
+    if (input.value.length > 0) {
+      triggerDialog(input.value);
+    }
+  }
   else if (e.code === "Tab" && popupVisible.value) {
-    // e.preventDefault();
+    e.preventDefault();
 
     // quill.focus();
     const selected = popupSections[popupSectionToShow.value]
@@ -131,7 +128,17 @@ document.addEventListener('keyup', (e) => {
       triggerDialog(selected[key]);
     }
   }
-  // console.log(e.code, popupVisible.value)
+  else if (popupVisible.value && (popupSectionToShow.value === 'tags' || popupSectionToShow.value === 'links')) {
+    if (e.key.length === 1) {
+      input.value += e.key;
+    } else if (e.key === 'Backspace') {
+      input.value = input.value.substr(0, input.value.length - 1)
+    }
+    const pattern = new RegExp(input.value, "gi");
+    popupSections['tags'] = tags.filter(el => pattern.test(el.name));
+    popupSections['links'] = links.filter(el => pattern.test(el.title));
+  }
+
 })
 
 watch(() => popupVisible.value, visible => {
@@ -145,21 +152,27 @@ watch(() => popupVisible.value, visible => {
 })
 
 function triggerDialog(text = '') {
-  popupVisible.value = !popupVisible.value; //по слэшу только открывать, закрываем по TAB'у
-  const caretPosition = quill.getSelection() || {index: 0, length: 0};
+  popupVisible.value = !popupVisible.value;
+
+  if (!popupVisible.value) {
+    popupSections['tags'] = tags;
+    popupSections['links'] = links;
+  }
+  // const caretPosition = quill.getSelection() || {index: 0, length: 0};
 
   if (popupSectionToShow.value === 'tags') {
-    quill.deleteText(--caretPosition.index, 1);
-    quill.insertText(caretPosition, `#${text}`);
+    const shift = input.value.length > 0 ? 2 : 1;
+    quill.deleteText(quill.getSelection().index - (input.value.length + shift), input.value.length + shift);
+    quill.insertText(quill.getSelection(), `#${text}`);
   }
   else if (popupSectionToShow.value === 'links')  {
-    quill.deleteText(--caretPosition.index, 1);
-    quill.insertText(caretPosition, text, 'link', 'https://world1.com');
+    quill.deleteText(quill.getSelection().index -= 1, 1);
+    quill.insertText(quill.getSelection(), text, 'link', 'https://world.com');
   }
-
-  const caretPositionInPixels = quill.getBounds(caretPosition);
+  const caretPositionInPixels = quill.getBounds(quill.getSelection());
   popupX.value = caretPositionInPixels.left;
   popupY.value = caretPositionInPixels.top;
+  input.value = '';
 }
 
 function selectOption(option) {
@@ -189,7 +202,13 @@ onMounted(() => {
           'tab': {
             key: 9,
             handler: function(range, event) {
-              // console.log('ddsdf')
+              // moveSelected(event.event.code);
+            }
+          },
+          'enter': {
+            key: 13,
+            handler: function(range, event) {
+              console.log('enter')
               // moveSelected(event.event.code);
             }
           },
@@ -218,10 +237,11 @@ onUpdated(() => {
       <div id="editor"></div>
     </div>
 
-    {{popupVisible}}<br>
-    {{popupSectionToShow}}
+<!--    {{popupVisible}}<br>-->
+<!--    {{popupSectionToShow}}<br>-->
+    {{input}}<br><br>
+    {{popupSections[popupSectionToShow]}}
 
-    <!--todo сделать коррекцию положения от координат редактора-->
     <q-card ref="card" class="my-card" v-if="popupVisible" :style="{'left': (popupX+5)+'px', 'top': (popupY+60)+'px'}">
         <q-card-section>
           <div class="text-subtitle2">{{titles[popupSectionToShow]}}</div>
