@@ -111,26 +111,24 @@ let quill;
 document.addEventListener('keydown', (e) => {
   if (e.code === "ArrowUp" && popupVisible.value) {
     e.preventDefault();
-    const card = document.getElementsByClassName('q-card__actions')[0];
-    const scrollPosition = card.scrollTop;
+    const card = document.getElementsByClassName('q-card__actions');
     if (popupActiveOption.value[popupSectionToShow.value] === 0) {
       popupActiveOption.value[popupSectionToShow.value] = popupSections[popupSectionToShow.value].length-1;
-      card.scrollTo(0,1000);
+      if (!!card) card[0].scrollTo(0,1000);
     } else {
       popupActiveOption.value[popupSectionToShow.value] -= 1;
-      card.scrollTo(0,scrollPosition-40);
+      if (!!card) card[0].scrollTo(0,card[0].scrollTop-40);
     }
   }
   else if (e.code === "ArrowDown" && popupVisible.value) {
     e.preventDefault();
-    const card = document.getElementsByClassName('q-card__actions')[0];
-    const scrollPosition = card.scrollTop;
+    const card = document.getElementsByClassName('q-card__actions');
     if (popupActiveOption.value[popupSectionToShow.value] >= popupSections[popupSectionToShow.value].length-1) {
       popupActiveOption.value[popupSectionToShow.value] = 0;
-      card.scrollTo(0,0);
+      if (!!card) card[0].scrollTo(0,0);
     } else {
       popupActiveOption.value[popupSectionToShow.value] += 1;
-      card.scrollTo(0,scrollPosition+40);
+      if (!!card) card[0].scrollTo(0,card[0].scrollTop+40);
     }
   }
   else if (e.code === "Escape" && popupVisible.value) {
@@ -179,7 +177,7 @@ function triggerDialog(selected, target = 'tags') {
   let section, key, text;
   section = (!selected) ? 'options' : selected['id'];
 
-  // console.log(section, selected, target, filter)
+  console.log(section, selected, target, popupSectionToShow.value)
 
   if (section === 'options' && !popupVisible.value) {
     popupVisible.value = true;
@@ -277,7 +275,7 @@ onUpdated(() => {
                 align="left"
                 :label="item.name || item.title"
                 :class="{'active': popupActiveOption[popupSectionToShow] === index}"
-                @click="triggerDialog(item)"
+                @click="triggerDialog(item, 'options')"
             />
             <q-separator v-if="index !== popupSections[popupSectionToShow].length-1" style="height: 0;" />
           </template>
