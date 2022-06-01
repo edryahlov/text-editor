@@ -7,7 +7,7 @@ import Quill from "quill";
 import "quill/dist/quill.core.css";
 import "quill/dist/quill.bubble.css";
 import "quill/dist/quill.snow.css";
-import {ref, onMounted, onUnmounted, onUpdated, watch} from "vue";
+import {shallowRef, ref, onMounted, onUnmounted, onUpdated, onBeforeUpdate, watch} from "vue";
 
 const options = JSON.parse(JSON.stringify([
   {
@@ -92,8 +92,8 @@ const links = JSON.parse(JSON.stringify([
 ]));
 const titles = {
   'options': 'Введи или выбери триггер и нажми "TAB"',
-  'tags': 'Выбрать - "TAB", создать - "ENTER"',
-  'links': 'Выбрать - "TAB", создать - "ENTER"',
+  'tags': 'Выбрать - "TAB"',
+  'links': 'Выбрать - "TAB"',
 }
 
 const sourceSections = JSON.parse(JSON.stringify({options, tags, links}));
@@ -109,9 +109,10 @@ let input = ref('');
 let quill;
 
 document.addEventListener('keydown', (e) => {
+  const card = document.getElementsByClassName('q-card__actions');
+
   if (e.code === "ArrowUp" && popupVisible.value) {
     e.preventDefault();
-    const card = document.getElementsByClassName('q-card__actions');
     if (popupActiveOption.value[popupSectionToShow.value] === 0) {
       popupActiveOption.value[popupSectionToShow.value] = popupSections[popupSectionToShow.value].length-1;
       if (!!card) card[0].scrollTo(0,1000);
@@ -122,7 +123,6 @@ document.addEventListener('keydown', (e) => {
   }
   else if (e.code === "ArrowDown" && popupVisible.value) {
     e.preventDefault();
-    const card = document.getElementsByClassName('q-card__actions');
     if (popupActiveOption.value[popupSectionToShow.value] >= popupSections[popupSectionToShow.value].length-1) {
       popupActiveOption.value[popupSectionToShow.value] = 0;
       if (!!card) card[0].scrollTo(0,0);
@@ -135,13 +135,15 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     popupVisible.value = false;
   }
-  else if (e.code === "Enter" && popupVisible.value) {
-    e.preventDefault();
-    console.log('enter2', e.code === "Enter", popupVisible.value)
-    if (input.value.length > 0) {
-      triggerDialog(input.value);
-    }
-  }
+  // else if (e.code === "Enter" && popupVisible.value) {
+  //   e.preventDefault();
+  //   // quill.disable()
+  //
+  //   const selected = popupSections[popupSectionToShow.value]
+  //       .find((el, index) => index === popupActiveOption.value[popupSectionToShow.value]);
+  //
+  //   triggerDialog(selected, 'options');
+  // }
   else if (e.code === "Tab" && popupVisible.value) {
     e.preventDefault();
 
@@ -157,10 +159,28 @@ document.addEventListener('keydown', (e) => {
   else if (popupVisible.value && e.key === 'Backspace') {
     input.value = input.value.substr(0, input.value.length - 1)
   }
-
-  const pattern = new RegExp(input.value, "gi");
-  popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
+  console.log(popupActiveOption.value)
+  // const pattern = new RegExp(input.value, "gi");
+  // popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
 })
+
+function getPopupSectionToShow() {
+  const pattern = new RegExp(input.value, "gi");
+  return sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
+}
+
+// let itemRefs = []
+// const setItemRef = el => {
+//   if (el) {
+//     itemRefs.push(el)
+//   }
+// }
+// onBeforeUpdate(() => {
+//   itemRefs = []
+// })
+// onUpdated(() => {
+//   console.log(itemRefs)
+// })
 
 watch(() => popupVisible.value, visible => {
   if (visible) {
@@ -231,8 +251,9 @@ onMounted(() => {
           'enter': {
             key: 13,
             handler: function(range, event) {
-              console.log('enter')
+              // console.log('enter')
               // moveSelected(event.event.code);
+
             }
           },
         }
@@ -269,7 +290,10 @@ onUpdated(() => {
         </q-card-section>
 
         <q-card-actions vertical>
-          <template v-for="(item, index) in popupSections[popupSectionToShow]" :key="item.id">
+          <template
+              v-for="(item, index) in getPopupSectionToShow()"
+              :key="item.id"
+          >
             <q-btn
                 flat
                 align="left"
