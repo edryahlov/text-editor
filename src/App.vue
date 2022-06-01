@@ -1,7 +1,7 @@
 <script setup>
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
-import HelloWorld from './components/HelloWorld.vue'
+// import HelloWorld from './components/HelloWorld.vue'
 
 import Quill from "quill";
 import "quill/dist/quill.core.css";
@@ -12,12 +12,12 @@ import {ref, onMounted, onUnmounted, onUpdated, watch} from "vue";
 const options = JSON.parse(JSON.stringify([
   {
     "id": "tags",
-    "name": "Добавить метку - \"мм\" или \"tt\"",
+    "name": 'Добавить метку "мм" или "tt"',
     "links": ["tags"]
   },
   {
     "id": "links",
-    "name": "Добавить связь - \"сс\" или \"ll\"",
+    "name": 'Добавить связь - "сс" или "ll"',
     "links": ["links"]
   },
 ]));
@@ -42,7 +42,28 @@ const tags = JSON.parse(JSON.stringify([
     "created": 1622699295262,
     "updated": 1622699295262,
     "links": ["ib-id-3"]
-  }
+  },
+  {
+    "id": "tag-id-4",
+    "name": "Метка 4",
+    "created": 1622699295262,
+    "updated": 1622699295262,
+    "links": ["ib-id-4"]
+  },
+  {
+    "id": "tag-id-5",
+    "name": "Метка 5",
+    "created": 1622699295262,
+    "updated": 1622699295262,
+    "links": ["ib-id-5"]
+  },
+  {
+    "id": "tag-id-6",
+    "name": "Метка 6",
+    "created": 1622699295262,
+    "updated": 1622699295262,
+    "links": ["ib-id-6"]
+  },
 ]));
 const links = JSON.parse(JSON.stringify([
   {
@@ -75,7 +96,8 @@ const titles = {
   'links': 'Выбрать - "TAB", создать - "ENTER"',
 }
 
-let popupSections = {options, tags, links};
+const sourceSections = JSON.parse(JSON.stringify({options, tags, links}));
+let popupSections = JSON.parse(JSON.stringify({options, tags, links}));
 const popupSectionToShow = ref('options');
 const popupActiveOption = ref({'options': 0, 'tags': 0, 'links': 0});
 
@@ -89,18 +111,26 @@ let quill;
 document.addEventListener('keydown', (e) => {
   if (e.code === "ArrowUp" && popupVisible.value) {
     e.preventDefault();
+    const card = document.getElementsByClassName('q-card__actions')[0];
+    const scrollPosition = card.scrollTop;
     if (popupActiveOption.value[popupSectionToShow.value] === 0) {
       popupActiveOption.value[popupSectionToShow.value] = popupSections[popupSectionToShow.value].length-1;
+      card.scrollTo(0,1000);
     } else {
       popupActiveOption.value[popupSectionToShow.value] -= 1;
+      card.scrollTo(0,scrollPosition-40);
     }
   }
   else if (e.code === "ArrowDown" && popupVisible.value) {
     e.preventDefault();
+    const card = document.getElementsByClassName('q-card__actions')[0];
+    const scrollPosition = card.scrollTop;
     if (popupActiveOption.value[popupSectionToShow.value] >= popupSections[popupSectionToShow.value].length-1) {
       popupActiveOption.value[popupSectionToShow.value] = 0;
+      card.scrollTo(0,0);
     } else {
       popupActiveOption.value[popupSectionToShow.value] += 1;
+      card.scrollTo(0,scrollPosition+40);
     }
   }
   else if (e.code === "Escape" && popupVisible.value) {
@@ -121,24 +151,17 @@ document.addEventListener('keydown', (e) => {
     const selected = popupSections[popupSectionToShow.value]
         .find((el, index) => index === popupActiveOption.value[popupSectionToShow.value]);
 
-    if (popupSectionToShow.value === 'options') {
-      selectOption(selected.id);
-    } else {
-      const key = Object.keys(selected).includes('name') ? 'name' : 'title';
-      triggerDialog(selected[key]);
-    }
+    triggerDialog(selected, 'options');
   }
-  else if (popupVisible.value && (popupSectionToShow.value === 'tags' || popupSectionToShow.value === 'links')) {
-    if (e.key.length === 1) {
+  else if (popupVisible.value && e.key.length === 1 && e.key !== '/') {
       input.value += e.key;
-    } else if (e.key === 'Backspace') {
-      input.value = input.value.substr(0, input.value.length - 1)
-    }
-    const pattern = new RegExp(input.value, "gi");
-    popupSections['tags'] = tags.filter(el => pattern.test(el.name));
-    popupSections['links'] = links.filter(el => pattern.test(el.title));
+  }
+  else if (popupVisible.value && e.key === 'Backspace') {
+    input.value = input.value.substr(0, input.value.length - 1)
   }
 
+  const pattern = new RegExp(input.value, "gi");
+  popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
 })
 
 watch(() => popupVisible.value, visible => {
@@ -147,43 +170,45 @@ watch(() => popupVisible.value, visible => {
   } else {
     quill.enable(true);
     quill.focus();
-    popupSectionToShow.value = 'options'
+    popupSectionToShow.value = 'options';
+    popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value];
   }
 })
 
-function triggerDialog(text = '') {
-  popupVisible.value = !popupVisible.value;
+function triggerDialog(selected, target = 'tags') {
+  let section, key, text;
+  section = (!selected) ? 'options' : selected['id'];
 
-  if (!popupVisible.value) {
-    popupSections['tags'] = tags;
-    popupSections['links'] = links;
-  }
-  // const caretPosition = quill.getSelection() || {index: 0, length: 0};
+  // console.log(section, selected, target, filter)
 
-  if (popupSectionToShow.value === 'tags') {
-    const shift = input.value.length > 0 ? 2 : 1;
-    quill.deleteText(quill.getSelection().index - (input.value.length + shift), input.value.length + shift);
-    quill.insertText(quill.getSelection(), `#${text}`);
+  if (section === 'options' && !popupVisible.value) {
+    popupVisible.value = true;
+    popupSectionToShow.value = section;
+  } else if ((section === 'tags' || section === 'links') && popupVisible.value) {
+    popupSectionToShow.value = section;
+  } else if (target === 'options') {
+
+    key = Object.keys(selected).includes('name') ? 'name' : 'title';
+    text = selected[key];
+
+    if (popupSectionToShow.value === 'tags') {
+      const shift = input.value.length > 0 ? 2 : 1;
+      quill.deleteText(quill.getSelection().index - (input.value.length + shift), input.value.length + shift);
+      quill.insertText(quill.getSelection(), `#${text}`);
+    }
+    else if (popupSectionToShow.value === 'links')  {
+      quill.deleteText(quill.getSelection().index -= 1, 1);
+      quill.insertText(quill.getSelection(), text, 'link', 'https://world.com');
+    }
+
+    popupVisible.value = false;
+    popupSectionToShow.value = 'options';
   }
-  else if (popupSectionToShow.value === 'links')  {
-    quill.deleteText(quill.getSelection().index -= 1, 1);
-    quill.insertText(quill.getSelection(), text, 'link', 'https://world.com');
-  }
+
   const caretPositionInPixels = quill.getBounds(quill.getSelection());
   popupX.value = caretPositionInPixels.left;
   popupY.value = caretPositionInPixels.top;
   input.value = '';
-}
-
-function selectOption(option) {
-  if (option === 'tags' || option === 'links') {
-    popupSectionToShow.value = option;
-  } else {
-    const selected = popupSections[popupSectionToShow.value].find(el => el.id === option);
-    const key = Object.keys(selected).includes('name') ? 'name' : 'title';
-    triggerDialog(selected[key]);
-    popupSectionToShow.value = 'options';
-  }
 }
 
 onMounted(() => {
@@ -237,10 +262,8 @@ onUpdated(() => {
       <div id="editor"></div>
     </div>
 
-<!--    {{popupVisible}}<br>-->
-<!--    {{popupSectionToShow}}<br>-->
-    {{input}}<br><br>
-    {{popupSections[popupSectionToShow]}}
+<!--    {{input}}<br>-->
+<!--    {{popupSections[popupSectionToShow]}}<br>-->
 
     <q-card ref="card" class="my-card" v-if="popupVisible" :style="{'left': (popupX+5)+'px', 'top': (popupY+60)+'px'}">
         <q-card-section>
@@ -251,11 +274,12 @@ onUpdated(() => {
           <template v-for="(item, index) in popupSections[popupSectionToShow]" :key="item.id">
             <q-btn
                 flat
+                align="left"
                 :label="item.name || item.title"
                 :class="{'active': popupActiveOption[popupSectionToShow] === index}"
-                @click="selectOption(item.id)"
+                @click="triggerDialog(item)"
             />
-            <q-separator v-if="index !== popupSections[popupSectionToShow].length-1" />
+            <q-separator v-if="index !== popupSections[popupSectionToShow].length-1" style="height: 0;" />
           </template>
         </q-card-actions>
     </q-card>
@@ -273,5 +297,27 @@ onUpdated(() => {
   position: absolute
   display: inline-block
 .active
-  background: #dedede
+  background: #EAEAEA
+.q-card
+  border-radius: 0
+  &__section
+    &--vert
+      padding: 8px
+      font-size: 15px
+      color: #959595
+  &__actions
+    padding: 0
+    max-height: 130px
+    flex-wrap: nowrap
+    overflow-y: auto
+.q-btn
+  text-transform: none
+  font-weight: 400
+  font-size: 15px
+  min-height: auto
+  padding: 8px
+  &--rectangle
+    border-radius: 0
+
+
 </style>
