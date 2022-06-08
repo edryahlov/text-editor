@@ -37,11 +37,11 @@ const tags = JSON.parse(JSON.stringify([
     "links": ["ib-id-2"]
   },
   {
-    "id": "tag-id-3",
-    "name": "Метка 3",
+    "id": "tag-id-22",
+    "name": "Метка 22",
     "created": 1622699295262,
     "updated": 1622699295262,
-    "links": ["ib-id-3"]
+    "links": ["ib-id-22"]
   },
   {
     "id": "tag-id-4",
@@ -100,6 +100,7 @@ const sourceSections = JSON.parse(JSON.stringify({options, tags, links}));
 let popupSections = JSON.parse(JSON.stringify({options, tags, links}));
 const popupSectionToShow = ref('options');
 const popupActiveOption = ref({'options': 0, 'tags': 0, 'links': 0});
+const popupActiveOption2 = ref({'options': options[0]['id'], 'tags': tags[0]['id'], 'links': links[0]['id']});
 
 const popupVisible = ref(false);
 const popupX = ref(0);
@@ -123,11 +124,23 @@ document.addEventListener('keydown', (e) => {
   }
   else if (e.code === "ArrowDown" && popupVisible.value) {
     e.preventDefault();
+
+
+    // console.log(popupSections[popupSectionToShow.value])
+    // console.log(popupActiveOption2.value[popupSectionToShow.value])
+    // console.log(popupSections[popupSectionToShow.value].findIndex(el => el.id === popupActiveOption2.value[popupSectionToShow.value]))
+    // console.log(popupSections[popupSectionToShow.value].map(el => el.id).indexOf(popupActiveOption2.value[popupSectionToShow.value]))
+    // console.log(popupSections[popupSectionToShow.value].map(el => console.log(el.id)))
+
+    //todo переделать логику
+
     if (popupActiveOption.value[popupSectionToShow.value] >= popupSections[popupSectionToShow.value].length-1) {
       popupActiveOption.value[popupSectionToShow.value] = 0;
+      // popupActiveOption2.value[popupSectionToShow.value] = 0;
       if (!!card) card[0].scrollTo(0,0);
     } else {
       popupActiveOption.value[popupSectionToShow.value] += 1;
+      // popupActiveOption2.value[popupSectionToShow.value] = popupSections[popupSectionToShow.value][]['id'];
       if (!!card) card[0].scrollTo(0,card[0].scrollTop+40);
     }
   }
@@ -154,19 +167,22 @@ document.addEventListener('keydown', (e) => {
     triggerDialog(selected, 'options');
   }
   else if (popupVisible.value && e.key.length === 1 && e.key !== '/') {
-      input.value += e.key;
+    input.value += e.key;
   }
   else if (popupVisible.value && e.key === 'Backspace') {
     input.value = input.value.substr(0, input.value.length - 1)
   }
-  console.log(popupActiveOption.value)
+  // console.log(popupActiveOption.value)
   // const pattern = new RegExp(input.value, "gi");
   // popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
+
+  //todo если изменилось кол-во отфильтрованных элементов в меньшую сторону - сбрасывать положение курсора на ноль
+
 })
 
 function getPopupSectionToShow() {
   const pattern = new RegExp(input.value, "gi");
-  return sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
+  return popupSections[popupSectionToShow.value] = sourceSections[popupSectionToShow.value].filter(el => pattern.test(el.name));
 }
 
 // let itemRefs = []
